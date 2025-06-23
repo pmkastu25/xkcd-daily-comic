@@ -23,11 +23,11 @@ function generateVerificationCode(): string {
  */
 
 function getDBConnection(): mysqli {
-    $host = '127.0.0.1'; // or your host
-    $db   = 'xkcd';       // your DB name
-    $user = 'root';       // your DB user
-    $pass = 'Prathu25Database';           // your DB password
-    $charset = 'utf8mb4';
+    $host = 'db';         // matches the service name in docker-compose
+$user = 'root';
+$pass = 'root';
+$db   = 'xkcd';           // your DB password
+    // $charset = 'utf8mb4';
 
     // $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
     // $options = [
