@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: xkcd-daily-comic
+    env: docker
+    repo: https://github.com/pmkastu25/xkcd-daily-comic.git
+    branch: master
+    plan: free
+    autoDeploy: true
