@@ -1,7 +1,7 @@
 FROM php:8.3-apache
 
-# Install PDO MySQL driver
-RUN docker-php-ext-install pdo pdo_mysql
+# Install PHP extensions
+RUN docker-php-ext-install mysqli
 
 # Copy your PHP files into the Apache web root
 COPY . /var/www/html/
