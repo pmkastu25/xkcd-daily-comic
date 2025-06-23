@@ -21,6 +21,24 @@ function generateVerificationCode(): string {
  * Send a verification code to an email.
  * Used smtp sendmail service of xampp or phpmailer
  */
+
+function getDBConnection(): PDO {
+    $host = 'localhost'; // or your host
+    $db   = 'xkcd';       // your DB name
+    $user = 'root';       // your DB user
+    $pass = 'Prathu25Database';           // your DB password
+    $charset = 'utf8mb4';
+
+    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ];
+
+    return new PDO($dsn, $user, $pass, $options);
+}
+
+
 function sendVerificationEmail(string $email, string $code): bool {
     $mail = new PHPMailer(true);
 
@@ -81,28 +99,38 @@ function verifyCode($email, $code): bool {
 /**
  * Register an email by storing it in a file.
  */
-function registerEmail(string $email): bool {
-    // TODO: Implement this function
-    $file = __DIR__ . '/registered_emails.txt';
+// function registerEmail(string $email): bool {
+//     // TODO: Implement this function
+//     $file = __DIR__ . '/registered_emails.txt';
    
+//     $email = trim(strtolower($email));
+
+//     if (!file_exists($file)) {
+//         file_put_contents($file, $email . PHP_EOL);
+//         return true;
+//     }
+
+//     // $emails = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+//     $emails = fetchRegisteredEmailsFromDatabase();
+
+//     $emails = array_map('strtolower', array_map('trim', $emails));
+
+//     if (!in_array($email, $emails)) {
+//         file_put_contents($file, $email . PHP_EOL, FILE_APPEND);
+//         return true;
+//     }
+
+//     return false;
+// }
+
+function registerEmail(string $email): bool {
+    $pdo = getDBConnection();
     $email = trim(strtolower($email));
 
-    if (!file_exists($file)) {
-        file_put_contents($file, $email . PHP_EOL);
-        return true;
-    }
-
-    $emails = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-    $emails = array_map('strtolower', array_map('trim', $emails));
-
-    if (!in_array($email, $emails)) {
-        file_put_contents($file, $email . PHP_EOL, FILE_APPEND);
-        return true;
-    }
-
-    return false;
+    $stmt = $pdo->prepare("INSERT IGNORE INTO registered_emails (email) VALUES (:email)");
+    return $stmt->execute(['email' => $email]);
 }
+
 
 /**
  * Unsubscribe an email by removing it from the list.
@@ -134,16 +162,24 @@ function sendUnsubscribeConfirmationEmail(string $email, string $code): bool {
     }
 }
 
+// function unsubscribeEmail(string $email): bool {
+//   $file = __DIR__ . '/registered_emails.txt';
+// //   $emails = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+//     $emails = fetchRegisteredEmailsFromDatabase();
+
+//   $emails = array_filter($emails, fn($e) => $e !== $email);
+
+//   file_put_contents($file, implode(PHP_EOL, $emails).PHP_EOL);
+//   return true;
+//     // TODO: Implement this function
+// }
+
 function unsubscribeEmail(string $email): bool {
-  $file = __DIR__ . '/registered_emails.txt';
-  $emails = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-  $emails = array_filter($emails, fn($e) => $e !== $email);
-
-  file_put_contents($file, implode(PHP_EOL, $emails).PHP_EOL);
-  return true;
-    // TODO: Implement this function
+    $pdo = getDBConnection();
+    $stmt = $pdo->prepare("DELETE FROM registered_emails WHERE email = :email");
+    return $stmt->execute(['email' => $email]);
 }
+
 
 /**
  * Fetch random XKCD comic and format data as HTML.
@@ -164,10 +200,19 @@ function fetchAndFormatXKCDData(string $email = ''): string {
 /**
  * Send the formatted XKCD updates to registered emails.
  */
+function fetchRegisteredEmailsFromDatabase(): array {
+    $pdo = getDBConnection();
+
+    $stmt = $pdo->query("SELECT email FROM registered_emails");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);  // returns array of emails
+}
+
 function sendXKCDUpdatesToSubscribers(): void {
     // TODO: Implement this function
-    $file = __DIR__ . '/registered_emails.txt';
-    $emails = file($file,  FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    // $file = __DIR__ . '/registered_emails.txt';
+    // $emails = file($file,  FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    $emails = fetchRegisteredEmailsFromDatabase();
 
     $subject = "Your XKCD Comic";
     $headers = "From: no-reply@example.com\r\n" .
