@@ -22,20 +22,28 @@ function generateVerificationCode(): string {
  * Used smtp sendmail service of xampp or phpmailer
  */
 
-function getDBConnection(): PDO {
+function getDBConnection(): mysqli {
     $host = 'localhost'; // or your host
     $db   = 'xkcd';       // your DB name
     $user = 'root';       // your DB user
     $pass = 'Prathu25Database';           // your DB password
     $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-    $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ];
+    // $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+    // $options = [
+    //     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    //     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    // ];
 
-    return new PDO($dsn, $user, $pass, $options);
+    // return new PDO($dsn, $user, $pass, $options);
+    
+    $conn = new mysqli($host, $user, $pass, $db);
+
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    return $conn;
 }
 
 
@@ -124,11 +132,23 @@ function verifyCode($email, $code): bool {
 // }
 
 function registerEmail(string $email): bool {
-    $pdo = getDBConnection();
-    $email = trim(strtolower($email));
+    // $pdo = getDBConnection();
+    // $email = trim(strtolower($email));
 
-    $stmt = $pdo->prepare("INSERT IGNORE INTO registered_emails (email) VALUES (:email)");
-    return $stmt->execute(['email' => $email]);
+    // $stmt = $pdo->prepare("INSERT IGNORE INTO registered_emails (email) VALUES (:email)");
+    // return $stmt->execute(['email' => $email]);
+
+    $conn = getDBConnection();
+
+    $email = trim(strtolower($email));
+    $stmt = $conn->prepare("INSERT IGNORE INTO registered_emails (email) VALUES (?)");
+    $stmt->bind_param("s", $email);
+
+    $result = $stmt->execute();
+    $stmt->close();
+    $conn->close();
+
+    return $result;
 }
 
 
@@ -175,9 +195,18 @@ function sendUnsubscribeConfirmationEmail(string $email, string $code): bool {
 // }
 
 function unsubscribeEmail(string $email): bool {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare("DELETE FROM registered_emails WHERE email = :email");
-    return $stmt->execute(['email' => $email]);
+    // $pdo = getDBConnection();
+    // $stmt = $pdo->prepare("DELETE FROM registered_emails WHERE email = :email");
+    // return $stmt->execute(['email' => $email]);
+      $conn = getDBConnection();
+    $stmt = $conn->prepare("DELETE FROM registered_emails WHERE email = ?");
+    $stmt->bind_param("s", $email);
+
+    $result = $stmt->execute();
+    $stmt->close();
+    $conn->close();
+
+    return $result;
 }
 
 
@@ -201,10 +230,21 @@ function fetchAndFormatXKCDData(string $email = ''): string {
  * Send the formatted XKCD updates to registered emails.
  */
 function fetchRegisteredEmailsFromDatabase(): array {
-    $pdo = getDBConnection();
+    // $pdo = getDBConnection();
 
-    $stmt = $pdo->query("SELECT email FROM registered_emails");
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);  // returns array of emails
+    // $stmt = $pdo->query("SELECT email FROM registered_emails");
+    // return $stmt->fetchAll(PDO::FETCH_COLUMN);  // returns array of emails
+    $conn = getDBConnection();
+
+    $result = $conn->query("SELECT email FROM registered_emails");
+    $emails = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $emails[] = $row['email'];
+    }
+
+    $conn->close();
+    return $emails;
 }
 
 function sendXKCDUpdatesToSubscribers(): void {
