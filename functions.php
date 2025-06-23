@@ -23,7 +23,7 @@ function generateVerificationCode(): string {
  */
 
 function getDBConnection(): mysqli {
-    $host = 'localhost'; // or your host
+    $host = '127.0.0.1'; // or your host
     $db   = 'xkcd';       // your DB name
     $user = 'root';       // your DB user
     $pass = 'Prathu25Database';           // your DB password
